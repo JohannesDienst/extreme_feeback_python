@@ -21,12 +21,14 @@ GPIO.output(13, GPIO.HIGH)
 
 #setup modules
 import json
-builds = json.load(open("builds.json"))
+buildsFilePath = "builds.json"
+builds = json.load(open(buildsFilePath))
 
 def evaluateStatus(module=None, status=None):
     print "Evaluate status: " + str(builds)
     if module != None and status != None:
         builds[module] = status
+
     print builds
 
     status = "stable"
@@ -47,6 +49,10 @@ def setGPIO(status):
         print("Red")
         GPIO.output(11, GPIO.HIGH)
         GPIO.output(13, GPIO.LOW)
+
+def writeStatusToFile():
+    with open(buildsFilePath, "w") as outfile:
+        json.dump(builds, outfile)
 
 status = evaluateStatus()
 print("Starting with status: " + str(status))
@@ -69,6 +75,7 @@ def status():
 
     status = evaluateStatus(module, status)
     setGPIO(status)
+    writeStatusToFile()
 
     return str(module) + " " + str(status)
 
