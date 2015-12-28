@@ -5,14 +5,14 @@
 import time
 import RPi.GPIO as GPIO
 
-# RPi.GPIO Layout verwenden (wie Pin-Nummern)
+# RPi.GPIO Layout (PIN-Numbers)
 GPIO.setmode(GPIO.BOARD)
 
-# Pin 6 (GPIO 17) auf Output setzen
+# Pin 11 (GPIO 17) Output
 GPIO.setup(11, GPIO.OUT)
 GPIO.output(11, GPIO.LOW)
 
-# Pin 7 (GPIO 27) auf Output setzen
+# Pin 13 (GPIO 27) Output
 GPIO.setup(13, GPIO.OUT)
 GPIO.output(13, GPIO.LOW)
 
@@ -24,22 +24,33 @@ import json
 builds = json.load(open("builds.json"))
 
 def evaluateStatus(module=None, status=None):
+    print "Evaluate status: " + str(builds)
+    if module != None and status != None:
+        builds[module] = status
+    print builds
 
-    # if module != None && status != None
-    #     builds.module = status
-
+    status = "stable"
     for key, value in builds.iteritems():
        print( str(key) + " " + str(value))
        if value != "stable":
            print("Unstable: " + str(key))
            status = "unstable"
+           return status
+    return status
 
-status = "stable"
+def setGPIO(status):
+    if status == "stable":
+        print("Green")
+        GPIO.output(11, GPIO.LOW)
+        GPIO.output(13, GPIO.HIGH)
+    else:
+        print("Red")
+        GPIO.output(11, GPIO.HIGH)
+        GPIO.output(13, GPIO.LOW)
 
-evaluateStatus()
-
+status = evaluateStatus()
 print("Starting with status: " + str(status))
-
+setGPIO(status)
 
 # setup bottle
 from bottle import route, request, run
@@ -49,16 +60,15 @@ def status():
     module = request.query.module
     status = request.query.status
 
-    print("status: " + str(status))
-
     if status == "success":
-        print("Green")
-        GPIO.output(11, GPIO.LOW)
-        GPIO.output(13, GPIO.HIGH)
+        status = "stable"
     else:
-        print("Red")
-        GPIO.output(11, GPIO.HIGH)
-        GPIO.output(13, GPIO.LOW)
+        status = "unstable"
+
+    print("module: " + module + " has status: " + str(status))
+
+    status = evaluateStatus(module, status)
+    setGPIO(status)
 
     return str(module) + " " + str(status)
 
